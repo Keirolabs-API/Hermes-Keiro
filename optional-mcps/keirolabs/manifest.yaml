@@ -1,0 +1,67 @@
+# Nous-approved MCP catalog entry.
+# Presence in this directory = approval. Merged via PR review.
+#
+# Schema version 1.
+manifest_version: 1
+
+name: keirolabs
+description: >-
+  Keiro web tools — web_search, web_research, extract_url, and answer, plus
+  docs/utility helpers (list_endpoints, get_endpoint, get_rate_limits,
+  get_auth, generate_code, get_mcp_tools, suggest_schema, check_credits).
+source: https://kierolabs.space/mcp/api
+
+# Keiro ships a remote MCP server over Streamable HTTP. Nothing to install
+# locally — Hermes's MCP client connects to the URL and authenticates with a
+# Bearer API key in the Authorization header. The catalog install flow writes
+# `Authorization: Bearer ${KEIRO_API_KEY}` into the server block; the key is
+# prompted at install time and stored in ~/.hermes/.env.
+transport:
+  type: http
+  url: https://kierolabs.space/mcp/api
+
+# Authentication: opaque dashboard key prefixed with "keiro_". Created in the
+# Keiro dashboard under API Keys. Stored in ~/.hermes/.env as KEIRO_API_KEY.
+auth:
+  type: api_key
+  env:
+    - name: KEIRO_API_KEY
+      prompt: "Keiro API key (starts with keiro_ — create it in the Keiro dashboard under API Keys)"
+      required: true
+      secret: true
+
+# Tool selection at install time:
+# Keiro exposes 12 tools. The four API tools cost credits per call
+# (web_search ~1-2, extract_url ~1-3, web_research ~3-5, answer ~5); the eight
+# docs/utility tools are free. We pre-check everything — the whole point of
+# installing Keiro is to use it, and every tool is read-only (no mutations to
+# the user's own systems). Users who want to gate credit spend can prune the
+# pricier tools in the install checklist or via `hermes mcp configure keirolabs`.
+tools:
+  default_enabled:
+    # API tools (credits per call)
+    - web_search
+    - web_research
+    - extract_url
+    - answer
+    # Docs & utility tools (no credits)
+    - list_endpoints
+    - get_endpoint
+    - get_rate_limits
+    - get_auth
+    - generate_code
+    - get_mcp_tools
+    - suggest_schema
+    - check_credits
+
+post_install: |
+  Generate an API key in the Keiro dashboard (API Keys section). It starts
+  with "keiro_". You pasted it during install; it lives in
+  ~/.hermes/.env as KEIRO_API_KEY.
+
+  The four API tools (web_search, web_research, extract_url, answer) deduct
+  Keiro credits on every call. The eight docs/utility tools are free.
+
+  Start a new Hermes session to load the Keiro tools. Re-run the tool
+  checklist any time with:
+    hermes mcp configure keirolabs
