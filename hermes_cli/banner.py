@@ -578,6 +578,46 @@ def _display_toolset_name(toolset_name: str) -> str:
     )
 
 
+def _keiro_status_line(mcp_status, accent, dim, text) -> str:
+    """One-line Keiro status for the banner — always shown, with an actionable hint.
+
+    Keiro is a remote MCP server (web_search / web_research / extract_url /
+    answer + free docs tools). Surfaced on its own line so its state is obvious
+    at startup, separate from the generic MCP Servers list.
+    """
+    # Key resolves the same way the MCP client expands ${KEIRO_API_KEY} —
+    # from the active profile's secret scope (~/.hermes/.env), then os.environ.
+    try:
+        from agent.secret_scope import get_secret
+        key = (get_secret("KEIRO_API_KEY", "") or "").strip()
+    except Exception:
+        key = ""
+
+    srv = next(
+        (s for s in (mcp_status or [])
+         if str(s.get("name", "")).lower() == "keirolabs"),
+        None,
+    )
+    if srv is None:
+        return (f"[bold {accent}]Keiro[/] [dim {dim}]— not installed[/] "
+                f"[dim](run: hermes mcp install keirolabs)[/]")
+
+    if not key:
+        return (f"[bold {accent}]Keiro[/] [dim {dim}]— no API key[/] "
+                f"[dim](set KEIRO_API_KEY in ~/.hermes/.env)[/]")
+
+    st = srv.get("status")
+    if srv.get("connected"):
+        return f"[bold {accent}]Keiro[/] [{text}]— ready ({srv.get('tools', 0)} tool(s))[/]"
+    if st == "disabled":
+        return f"[bold {accent}]Keiro[/] [dim {dim}]— disabled[/]"
+    if st == "connecting":
+        return f"[bold {accent}]Keiro[/] [yellow]— connecting…[/]"
+    if st == "failed":
+        return f"[bold {accent}]Keiro[/] [red]— failed to connect[/]"
+    return f"[bold {accent}]Keiro[/] [dim {dim}]— configured[/]"
+
+
 def build_welcome_banner(console: "Console", model: str, cwd: str,
                          tools: List[dict] = None,
                          enabled_toolsets: List[str] = None,
@@ -763,6 +803,10 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
         right_lines.append("")
         right_lines.append(f"[bold {accent}]MCP Servers[/]")
         for srv in mcp_status:
+            # Keiro gets its own dedicated line below — skip it here to avoid
+            # listing it twice.
+            if str(srv.get("name", "")).lower() == "keirolabs":
+                continue
             status = srv.get("status")
             if srv["connected"]:
                 right_lines.append(
@@ -789,6 +833,10 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
                     f"[red]{srv['name']}[/] [dim]({srv['transport']})[/] "
                     f"[red]— failed[/]"
                 )
+
+    # Dedicated Keiro line (web search / research / answer tools via MCP).
+    right_lines.append("")
+    right_lines.append(_keiro_status_line(mcp_status, accent, dim, text))
 
     right_lines.append("")
     right_lines.append(f"[bold {accent}]Available Skills[/]")

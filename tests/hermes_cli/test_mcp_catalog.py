@@ -307,6 +307,45 @@ class TestInstall:
         assert server["url"] == "https://mcp.example.com/sse"
         assert server["auth"] == "oauth"
 
+    def test_install_http_api_key_writes_bearer_header(self, catalog_dir, monkeypatch):
+        """HTTP + api_key must write an Authorization: Bearer ${ENV} header,
+        referencing the secret env var prompted at install time. Without this
+        the key lands in .env but never reaches the server → 401."""
+        body = _basic_manifest(
+            transport={"type": "http", "url": "https://mcp.example.com/api"},
+            auth={
+                "type": "api_key",
+                "env": [
+                    {"name": "KEIRO_API_KEY", "prompt": "key", "secret": True},
+                    {"name": "KEIRO_BASE_URL", "prompt": "url", "secret": False, "required": False},
+                ],
+            },
+        )
+        _write_manifest(catalog_dir, "demo", body)
+
+        from hermes_cli import mcp_catalog
+        from hermes_cli.mcp_catalog import install_entry
+        from hermes_cli.config import get_env_value, load_config
+
+        monkeypatch.setattr(mcp_catalog, "_prompt_input", lambda *a, **kw: "keiro_secret")
+
+        install_entry(_entry("demo"), enable=True)
+
+        # On disk the secret must be a placeholder, never the literal key —
+        # the real key lives in ~/.hermes/.env, not config.yaml.
+        from hermes_cli.config import get_config_path
+        with open(get_config_path()) as f:
+            raw = yaml.safe_load(f)
+        server = raw["mcp_servers"]["demo"]
+        assert server["url"] == "https://mcp.example.com/api"
+        # Secret env var becomes the Bearer token source; non-secret does not.
+        assert server["headers"] == {"Authorization": "Bearer ${KEIRO_API_KEY}"}, server
+        assert get_env_value("KEIRO_API_KEY") == "keiro_secret"
+
+        # And load_config() expands the placeholder at read time → runtime auth.
+        expanded = load_config()["mcp_servers"]["demo"]
+        assert expanded["headers"] == {"Authorization": "Bearer keiro_secret"}, expanded
+
     def test_install_required_env_missing_raises(self, catalog_dir, monkeypatch):
         body = _basic_manifest(
             auth={

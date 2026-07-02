@@ -472,6 +472,16 @@ def _build_server_config(
         cfg["url"] = t.url
         if entry.auth.type == "oauth":
             cfg["auth"] = "oauth"
+        elif entry.auth.type == "api_key":
+            # ponytail: first secret env var → Bearer header. Multi-key HTTP
+            # MCPs are vanishingly rare; add a per-env header map if one shows
+            # up. Non-secret env vars (e.g. a base URL) are not headers — the
+            # server reads them from its own environment, not the request.
+            # Runtime interpolation (`_interpolate_env_vars` in mcp_config)
+            # expands ${KEIRO_API_KEY} from ~/.hermes/.env at connect time.
+            key_var = next((e.name for e in entry.auth.env if e.secret), None)
+            if key_var:
+                cfg["headers"] = {"Authorization": f"Bearer ${{{key_var}}}"}
     return cfg
 
 
