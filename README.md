@@ -51,21 +51,41 @@ Hermes catalog, config builder, and startup banner:
   `connecting…` / `failed`), resolved via `agent.secret_scope`. Keiro is skipped
   in the generic MCP Servers list to avoid double-listing.
 
-## Install
+## Quick start (one command)
 
-1. Generate a Keiro API key in the [Keiro dashboard](https://kierolabs.space)
-   (API Keys section). It starts with `keiro_`.
-2. Install the catalog entry — you'll be prompted for the key:
+```bash
+git clone https://github.com/Keirolabs-API/Hermes-Keiro.git
+cd Hermes-Keiro
+./install.sh
+```
 
-   ```bash
-   hermes mcp install keirolabs
-   ```
+`install.sh` sets up Hermes (Python venv, deps, CLI, skills, setup wizard) and
+registers the Keiro MCP server, prompting for your `KEIRO_API_KEY`
+(create one at <https://kierolabs.space> → API Keys; starts with `keiro_`).
+No clone? One-liner:
 
-3. Start a new Hermes session to load the Keiro tools.
+```bash
+curl -fsSL https://raw.githubusercontent.com/Keirolabs-API/Hermes-Keiro/main/install.sh | bash
+```
+
+Then start a session — Keiro tools load on connect:
+
+```bash
+hermes
+```
+
+Already running Hermes? Just register Keiro:
+
+```bash
+hermes mcp install keirolabs
+```
 
 The four API tools (`web_search`, `web_research`, `extract_url`, `answer`)
 deduct Keiro credits per call; the eight docs/utility tools are free. Prune
 costlier tools any time with `hermes mcp configure keirolabs`.
+
+📖 **Full docs** — install details, config, tool reference, banner status,
+troubleshooting: [`docs/keiro.md`](docs/keiro.md).
 
 ## Running Hermes
 
