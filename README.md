@@ -84,8 +84,9 @@ The four API tools (`web_search`, `web_research`, `extract_url`, `answer`)
 deduct Keiro credits per call; the eight docs/utility tools are free. Prune
 costlier tools any time with `hermes mcp configure keirolabs`.
 
-📖 **Full docs** — install details, config, tool reference, banner status,
-troubleshooting: [`docs/keiro.md`](docs/keiro.md).
+📖 **Docs**
+- [`docs/overview.md`](docs/overview.md) — the whole tool: every `hermes` subcommand, feature areas, config layout, providers, MCP catalog, profiles, toolsets.
+- [`docs/keiro.md`](docs/keiro.md) — Keiro integration: install, config, tool reference, banner status, troubleshooting.
 
 ## Running Hermes
 
